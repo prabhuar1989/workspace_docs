@@ -1,0 +1,1463 @@
+what can be done using elasticsearch : 
+search engine, auto completion. typo corrections,
+
+ELK - 
+Kibana : Analytics and visualization - pie charts line charts, provides interface for authentication and authorization on elasticsearch
+
+Logstash :data processing pipeline - traditionally used to process logs from applications and send them to elasticsearch.
+data that logstash recieves will be handled as events like logFile entries, ecommerce orders, chat messages, etc.
+These events are processed and then forwarded to destinations - ES, Kafka, HTTP endpoint etc.
+input plugin - 
+output plugin - 
+
+
+Xpack :
+security, SSL, LDAP, in Kibana and ES
+monitoring performance of ELK
+Alerting : on some condition . 
+Reporting : exporting the visualizations to the files- generation on demand or schedule them.
+
+Elasticsearch queries are called query DSL.
+
+
+==============================================================================================================
+Elasticsearch basic architecture : 
+Node : One instance of elasticsearch that stores data
+we can have many nodes on multiple virtual or physical machines or same machines
+when a node starts up, it will join an existing cluster or create its own cluster.
+every node is part of a cluster.
+
+How is data distributed accross the nodes ? :
+each node belongs to a cluster =>nodes containing related data are grouped together as cluster.
+Seperate set of logical and unrelated data are maintained in multiple clusters. eg: seperate DBs in relational database.
+
+
+Documents - Json objects stored in index 
+The actual object is stored along with metadata as document  :  Document = stored Object + metadata 
+
+queries using kibana or postman or any rest client :
+Cluster APIs: 
+/_cluster/
+/_cat/nodes?v
+
+Sending queries with curl : 
+used to execute Rest APIs via terminal
+
+===========================================================================================
+Sharding and Replication
+
+ES stores data on multiple nodes of the cluster
+Sharding : way of dividing indices into multiple smaller pieces
+Sharding is done at index level and not at the cluster level
+Sharding helps in horizontally scaling the data volume
+The complete index data is divided into shards and each shard is saved in a node.
+1 node can have multiple shards of the same index. But is not recommended.
+An index contains a single shard by default
+
+A shard acts as a fully functional independent index on its own.
+Each shard is actually apache lucene index.
+That means an ES index of 5 shards = 5 indices of Apache lucene.
+A shard has no predefined size, but there is a limit on number of documents a shard can store i.e 2 billion documents
+
+Features of sharding : 
+Scaling up documents accross multiple nodes.
+Improved performance - parallelization of queries 
+
+Types of shards
+primary shard & replica shard
+
+Increase the number of shards using the split API
+Reduce the number of shards using the shrink API
+
+Replication : What happens if the node with a shard goes down ? Data lost !!
+Replication - A fault tolerance mechanism :  prevents loss of data.
+Its by default enabled !!
+replicas / replica shards - copies of shards
+shard + its replica = replication group
+a replica shard is never allocated to same node as the primary shard.
+
+Snapshots : taking backup
+
+
+
+=================================================================================================================
+curl -H "Content-Type: application/json" -XPOST "http://localhost:9200/product/default/_bulk?pretty" --data-binary "@products-bulk.json"
+curl -H "Content-Type: application/json" -XPOST "http://localhost:9200/recipe/default/_bulk?pretty" --data-binary "@recipe.json"
+curl -H "Content-Type: application/json" -XPOST "http://localhost:9200/order/default/_bulk?pretty" --data-binary "@orders-bulk.json"
+
+
+
+================================================================================================================
+
+1. To create an index : 
+PUT localhost:9200/product
+
+==========================================
+
+2. Adding a docmument: (Use PUT to update)
+Req : 
+POST localhost:9200/company/default/1       content-type = application/json
+{
+  "name" : "Java Application",
+  "developer" :  {
+    "fName" : "Ashwin",
+    "lName" : "Prabhu"
+  }
+}
+
+Resp : 
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 1,
+    "result": "created",
+    "_shards": {
+        "total": 2,
+        "successful": 1,
+        "failed": 0
+    },
+    "_seq_no": 0,
+    "_primary_term": 1
+}
+==========================================
+3. Retreiving document by Id 
+Req : 
+GET localhost:9200/company/default/1
+
+Resp :
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 1,
+    "found": true,
+    "_source": {
+        "name": "Java Application",
+        "developer": {
+            "fName": "Ashwin",
+            "lName": "Prabhu"
+        }
+    }
+}
+
+==========================================
+4.  Replacing document -  The whole document get replaced...
+
+Initial document : 
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 1,
+    "found": true,
+    "_source": {
+        "name": "Java Application",
+        "developer": {
+            "fName": "Ashwin",
+            "lName": "Prabhu"
+        }
+    }
+}
+
+Req : 
+PUT localhost:9200/company/default/1
+{
+  "company_name" : "Apple",
+  "employee" :  {
+    "fName" : "Ashwin",
+    "lName" : "Prabhu"
+  }
+}
+
+
+Resp:
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 2,
+    "result": "updated",
+    "_shards": {
+        "total": 2,
+        "successful": 1,
+        "failed": 0
+    },
+    "_seq_no": 1,
+    "_primary_term": 1
+}
+
+
+Verifying replace===>
+Req:
+GET localhost:9200/company/default/1
+
+Resp :  Note the version has changed to "2"
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 2,
+    "found": true,
+    "_source": {
+        "company_name": "Apple",
+        "employee": {
+            "fName": "Ashwin",
+            "lName": "Prabhu"
+        }
+    }
+}
+
+==========================================
+5. Updating document
+Initial document : 
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 2,
+    "found": true,
+    "_source": {
+        "company_name": "Apple",
+        "employee": {
+            "fName": "Ashwin",
+            "lName": "Prabhu"
+        }
+    }
+}
+
+
+Req : 
+POST localhost:9200/company/default/1/_update
+{
+	"doc":{
+		   "company_name" : "Google",
+		   "country":"US"
+		  }
+}
+
+
+Resp :  Note :  Even in update the version incremented to "3"
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 3,
+    "result": "updated",
+    "_shards": {
+        "total": 2,
+        "successful": 1,
+        "failed": 0
+    },
+    "_seq_no": 2,
+    "_primary_term": 1
+}
+
+Verifying update : 
+Req:
+GET localhost:9200/company/default/1
+
+Resp : 
+{
+    "_index": "company",
+    "_type": "default",
+    "_id": "1",
+    "_version": 3,
+    "found": true,
+    "_source": {
+        "company_name": "Google",
+        "employee": {
+            "fName": "Ashwin",
+            "lName": "Prabhu"
+        },
+        "country": "US"
+    }
+}
+
+Note :  Updating multiple documents using one request is not possible currently !
+==========================================
+6. scripting: Lectur 28
+
+=========================================
+7. Upserts
+
+Req:
+POST localhost:9200/company/default/1/_update
+
+{
+	"script":"ctx._source.price+=5",
+	"upsert" : {
+		"employee":{
+			"fName" : "Ashwin",
+			"lName" : "Prabhu"
+		}
+	}
+}
+
+===========================================
+8. Deleting documents
+
+Req : 
+DELETE localhost:9200/company/default/2
+
+req : localhost:9200/company/delete_by_query
+{
+	"query":{
+		"match":{
+			"company_name":"Google"
+		}
+	}
+}
+
+=============================================
+9. Deleting indices
+
+Req : 
+DELETE localhost:9200/company
+
+
+Resp : 
+ {
+    "acknowledged": true
+}
+
+===============================================
+10. Batch Processing (The bulk API)
+
+Req : 
+POST localhost:9200/company/default/_bulk
+{"index" : {"_id" : "1"}}
+{"company_name" : "Apple","rating" : "5.0"}
+{"index" : {"_id" : "2"}}
+{"company_name" : "Google","rating" : "5.0"}
+{"index" : {"_id" : "3"}}
+{"company_name" : "Microsoft","rating" : "4.7"}
+
+Resp : 
+{
+    "took": 1501,
+    "errors": false,
+    "items": [
+        {
+            "index": {
+                "_index": "company",
+                "_type": "default",
+                "_id": "1",
+                "_version": 1,
+                "result": "created",
+                "_shards": {
+                    "total": 2,
+                    "successful": 1,
+                    "failed": 0
+                },
+                "_seq_no": 0,
+                "_primary_term": 1,
+                "status": 201
+            }
+        },
+        {
+            "index": {
+                "_index": "company",
+                "_type": "default",
+                "_id": "2",
+                "_version": 1,
+                "result": "created",
+                "_shards": {
+                    "total": 2,
+                    "successful": 1,
+                    "failed": 0
+                },
+                "_seq_no": 0,
+                "_primary_term": 1,
+                "status": 201
+            }
+        },
+        {
+            "index": {
+                "_index": "company",
+                "_type": "default",
+                "_id": "3",
+                "_version": 1,
+                "result": "created",
+                "_shards": {
+                    "total": 2,
+                    "successful": 1,
+                    "failed": 0
+                },
+                "_seq_no": 0,
+                "_primary_term": 1,
+                "status": 201
+            }
+        }
+    ]
+}
+
+
+verify -- 
+Req :
+GET localhost:9200/company/default/_search
+
+Resp : 
+{
+    "took": 183,
+    "timed_out": false,
+    "_shards": {
+        "total": 5,
+        "successful": 5,
+        "skipped": 0,
+        "failed": 0
+    },
+    "hits": {
+        "total": 3,
+        "max_score": 1,
+        "hits": [
+            {
+                "_index": "company",
+                "_type": "default",
+                "_id": "2",
+                "_score": 1,
+                "_source": {
+                    "company_name": "Google",
+                    "rating": "5.0"
+                }
+            },
+            {
+                "_index": "company",
+                "_type": "default",
+                "_id": "1",
+                "_score": 1,
+                "_source": {
+                    "company_name": "Apple",
+                    "rating": "5.0"
+                }
+            },
+            {
+                "_index": "company",
+                "_type": "default",
+                "_id": "3",
+                "_score": 1,
+                "_source": {
+                    "company_name": "Microsoft",
+                    "rating": "4.7"
+                }
+            }
+        ]
+    }
+}
+
+
+=================================================================
+**********    Mapping   *****************
+=================================================================
+1. Get the exisitng  dynamic mapping of an index 
+Req : 
+GET localhost:9200/company/default/_mapping
+
+Resp : 
+{
+    "company": {
+        "mappings": {
+            "default": {
+                "properties": {
+                    "company_name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "rating": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+===================================================
+2. Various Metafields 
+
+_index : index to which document belongs
+_id  : document identifier
+_source : contains the original json object
+_field_names : 
+_routing : 
+_version : 
+_meta : to store custom data
+
+======================================================
+3. Various field data types 
+
+Core data types : 
+Text : analyzed , cant be used for exact matching. 
+keyword : to search for exact values - not analyzed !! -  used for sorting, filtering and aggregations
+these fields are analyzed by the keyword analyzer - noop analyzer - returns the complete value as a single token. 
+
+Numeric : byte , float, long, short,integer,half_float, scaled float, 
+Date : 
+boolean : true or false
+binary:
+Range data types : gt,gte,lt, lte
+
+
+
+Complex Data types : 
+Object data types : Any json object, 
+Array data types
+nested : Objects containing objects
+
+Datatype for all fields are mentioned using "type" key
+Datatype for object type fields are mentioned using "properties" key
+Objects are flattened using dot notation syntax and then stored in apache lucene.
+
+nested objects : when an array of objects are stored, the values of one field of each object in that array is stofed as list. Hence the relation between 2 fields of the object is lost. This can be prevented by using another type of object data type called "nested"
+nested objects are stored as hidden documents.
+
+
+Geo Data types : 
+Geo - point data type
+seo - shape data type
+
+
+Specialized data types : 
+
+=========================================================
+4. Add a mapping to an index 
+
+Req : (cant modify existing mapping but can add new type)
+POST localhost:9200/company/default/_mapping
+{
+	"properties" : {
+		"revenue" : {
+			"type": "double"
+		}
+	}
+}
+
+
+Resp:
+{
+    "company": {
+        "mappings": {
+            "default": {
+                "properties": {
+                    "company_name": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "rating": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "ignore_above": 256
+                            }
+                        }
+                    },
+                    "revenue": {
+                        "type": "double"
+                    }
+                }
+            }
+        }
+    }
+}
+
+============================================================
+
+5. Adding custom mappings after the new index is created
+
+Req : 
+PUT localhost:9200/analyst
+{
+	"mappings":{
+		"default":{
+			"dynamic" : false,
+			"properties" : {
+				"fName" : {
+					"type" : "text"
+				},
+				"lName" : {
+					"type" : "text"
+				},
+				"report_count" :{
+					"type" : "integer"
+				}
+			}
+		}
+	}
+}
+
+
+Resp : 
+{
+    "acknowledged": true,
+    "shards_acknowledged": true,
+    "index": "analyst"
+}
+
+verify : 
+Req : 
+GET localhost:9200/analyst/default/_mapping
+
+resp : 
+
+{
+    "analyst": {
+        "mappings": {
+            "default": {
+                "dynamic": "false",
+                "properties": {
+                    "fName": {
+                        "type": "text"
+                    },
+                    "lName": {
+                        "type": "text"
+                    },
+                    "report_count": {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
+    }
+}
+
+=======================================================
+6. Mapping parameters : 
+coerce = automtically cleaning up values 
+copy_to = copies field value into given field
+dynamic = enable diable default mapping
+properties = contains field mapping
+norms = relevance of the match
+format = format for date fields
+null_value = replaces null value by the value
+fields = indexing fields in different ways
+
+========================================================
+Analysis : 
+the text fields are analyzed before they are indexed !
+The analyzed values are then stored in datastructures that are efficient in searching
+when search for a value, the search doesnot happen on the fields or documents.
+
+POST  /_analyze
+{
+    "text": "2 guys walk  into a bar, but the third ... ducks! :-)",
+    "analyzer": "standard"
+}
+
+Inverted index : 
+A field's value [single or colection] is stored in several data structures. The data structure depends on fields data type by Apache lucene.
+ensure efficient data access.
+1 such data structure is => inverted index 
+Its actually a mapping between terms (tokens), documents that contain with their relevance score.
+Inverted index is created for each "text field".
+
+the numeric values, dates and geospatial data are stored in BKD trees.
+======================================================
+
+
+=================================================================
+**********    Analyzers   *****************
+=================================================================
+1. Character Filters
+a. HTML Strip character filer - used to filter out html tags
+b. Mapping character filter -  used for replacing certain characters
+c. Pattern replace filter - uses regular expression to match characters and replace them
+
+================================================================
+2. Tokenizers
+A. word oriented tokenizers
+a. Standard tokenizer - Divides text into terms based on white spaces and removes certain symbols
+b. Letter tokenizer - Divides text into terms when a non-letter character is encountered. This includes space.
+c. Lowercase tokenizer - same as the letter tokenizer but also converts terms to lowercase
+d. Whitespace tokenizer - based on whitespace-- other symbols are preserved
+e. UAX URL email tokenizer 
+
+B. partial word tokenzers
+a.  N-Gram Tokenizers
+b. Edge N-Gram Tokenizer
+c. Structured text tokenizer
+
+C. Structured
+a.Pattern Tokenizer
+b. Path tokenizer
+
+====================================================================
+3. Token Filters
+a. Standard Token Filter
+b. Lowercase Token Filter
+c. Uppercase Token Filter
+d. N-Gram Token filter
+e. Stop Token filter
+f. word delimiter
+g. Stemmer
+h. keyword marker
+i. snowball 
+j. synonym 
+
+====================================================================
+4. Default Analyzers
+a. Standard = standard tokenizer + lowercase filter
+b. Simple 
+c. Stop
+d. Language
+e. Keyword
+f. Pattern
+g. Whitespace analyzer
+
+============== Relevance calculation ================
+TF / IDF algorithm :
+Term frequency - the number of times a term occurs in a field value - the more times the term appears, the more relevant.
+Inverse Document Frequency = The number of times the term occurs with in the index. The higher the number of occurences the lesser relevant it is
+Feild length norm : How long the field is.. The longer the field, lesser the relevance of the term.
+
+Okapi BM 25 : better at handling stop words
+
+
+===================================
+5. Configuring analyzer - lecture 54
+
+
+
+PUT /existing_analyzer_config
+{
+  "settings" : {
+    "analysis" : {
+      "analyzer" : {
+        "english_stop":{
+          "type":"standard",
+          "stopwords":"_english_"
+        }
+      },
+      "filter":{
+        "my_stemmer":{
+          "type":"stemmer",
+          "name":"english"
+        }
+        
+      }
+    }
+  }
+}
+
+
+
+POST /existing_analyzer_config/_analyze
+{
+  "analyzer": "english_stop",
+  "text":"I'm in the mood of drinking semi-dry red wine!"
+}
+
+POST /existing_analyzer_config/_analyze
+{
+  "tokenizer": "standard",
+  "filter":["my_stemmer"],
+  "text":"I'm in the mood of drinking semi-dry red wine!"
+}
+
+PUT /custom_analyzer
+{
+  "settings":{
+    "analysis": {
+      "analyzer":{
+        "english_stop":{
+          "type":"standard",
+          "stopwords":"_english_"
+        },
+        "my_custom_analyzer":{
+          "type":"custom",
+          "char_filter":["html_strip"],
+          "filter":["standard","lowercase","trim","my_stemmer"],
+          "tokenizer":"standard"
+          
+        }
+        
+      },
+      "filter":{
+        "my_stemmer":{
+          "type":"stemmer",
+          "name":"english"
+        }
+        
+      }
+    }
+  }
+}
+
+POST /custom_analyzer/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text":"I'm in the mood of drinking semi-dry <strong>red</strong> wine!"
+}
+
+PUT /custom_analyzer/default/_mapping
+{
+  "properties": {
+    "description":{
+      "type":"text",
+      "analyzer":"my_custom_analyzer"
+    },
+    "teaser":{
+      "type":"text",
+      "analyzer": "standard"
+    }
+  }
+}
+
+POST /custom_analyzer/default/1
+{
+  "description":"drinking",
+  "teaser":"drinking"
+}
+
+==============================================================
+
+Introduction to search
+
+Query DSL
+Debugging why a document did or did not match a query : /_explain API
+
+Query clause can be executed in 2 contexts : 
+Query contexts: document match the query along with relevance
+
+Filter context : document either match or dont match - no relevance score 
+
+
+=================================================================================
+Term level queries : the values of the term level queries are not analyzed before searching for documents !! they search for exact match
+Match queries : The values are analyzed before searching for documents.
+querying structured data - numbers, dates, boolean, one word text fields.etc
+works exact match on fields with data types - keyword (case insensitive), dates. booleans etc.
+will not work for fields with datatype "text" unless explicitly mentioned in query to use the "keyword" data structure instead of "text".
+will not work directly on nested objects unless used along with nested path in the query !
+eg : 
+{
+"query": {
+"term" : {
+"title.keyword" : "title value"
+}
+}
+}
+
+  
+
+GET /product/default/_search
+{
+  "query":{
+    "term": {
+      "is_active" : true
+    }
+  }
+}
+
+GET /product/default/_search
+{
+  "query":{
+    "terms":{
+      "tags.keyword":["Cake","Soup"]
+    }
+  }
+}
+
+GET /product/default/_search
+{
+  "query":{
+    "ids":{
+      "values":[1,2,3]
+    }
+  }
+}
+
+GET /product/default/_search
+{
+  "query":{
+    "range":{
+      "in_stock":{
+        "gte":3,
+        "lt":5
+      }
+    }
+  }
+}
+
+
+
+GET /product/default/_search
+{
+  "query":{
+    "range":{
+      "created":{
+        "gte":"01-01-2005",
+        "lte":"01-01-2006",
+        "format":"dd-MM-yyyy"
+      }
+    }
+  }
+}
+
+
+GET /product/default/_search
+{
+  "query":{
+    "exists":{
+      "field":"tags"
+    }
+  }
+}
+
+GET /product/default/_search
+{
+  "query":{
+    "prefix":{
+      "tags.keyword":"Vege"
+    }
+  }
+}
+
+GET /product/default/_search
+{
+  "query":{
+    "wildcard":{
+      "tags.keyword":"Vege*ble"
+    }
+  }
+}
+
+GET /product/default/_search
+{
+  "query": {
+    "regexp": {
+      "name": "[0-9]+"
+    }
+  }
+}
+
+
+==================================================
+=========== Full Text Queries ====================
+==================================================
+
+
+
+
+
+GET /recipe/default/_search
+{
+  "query":{
+    "match_all": {}
+  }
+}
+
+GET /recipe/default/_search
+{
+  "query":{
+    "match" : {
+      "steps" : "vinegar and lemon juice"
+    }
+  }
+}
+
+GET /recipe/default/_search
+{
+  "query":{
+    "match_phrase": {
+      "description": "typical cream-packed"
+    }
+  }
+}
+
+GET /recipe/default/_search
+{
+  "query":{
+    "multi_match": {
+      "query": "pasta",
+      "fields": ["title","description"]
+    }
+  }
+}
+
+
+=======================================================
+========== Compound Queries  =========================
+=======================================================
+
+ "must_not": [
+        {
+          "match":{
+            "ingredients.name": "tuna"
+          }
+        }
+      ], 
+	  
+	  
+GET /recipe/default/_search
+{
+  "query":{
+    "match" : {
+      "title" : "pasta with parmesan and spinach"
+    }
+  }
+}
+
+GET /recipe/default/_search
+{
+  "query":{
+    "match_phrase": {
+      "title": "pasta carbonara"
+    }
+  }
+}
+
+GET /recipe/default/_search
+{
+  "query":{
+    "multi_match": {
+      "query": "pasta pesto",
+      "fields": ["title","description"]
+    }
+  }
+}
+
+
+GET /recipe/default/_search
+{
+  "query":{
+    "bool":{
+      "must":[
+        {
+          "match":{
+            "ingredients.name": "parmesan"
+          }
+        }
+        ],
+      "should": [
+        {
+          "match":{
+            "ingredients.name": "tuna"
+          }
+        }
+      ], 
+      "filter":[
+        {
+          "range":{
+            "preparation_time_minutes": {
+              "lte": 15
+            }
+          }
+        }
+        ]  
+    }
+  }
+}
+
+=======================================================
+======== Queries on Nested objects ====================
+=======================================================
+
+
+Prerequisite : 
+Creating new index and mapping and adding a couple of documents
+
+GET /department/default/_search
+{
+  "query":{
+    "nested" : {
+      "path" : "employees",
+      "query" : {
+        "bool":{
+          "must": [
+            {
+              "match":{
+                "employees.position": "intern"
+              }
+            },
+            {
+              "term":{
+                "employees.gender.keyword": {
+                  "value" : "F"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+===============================================================
+============= Controlling query results =======================
+===============================================================
+
+Specifying the result format
+
+GET /recipe/default/_search?format=yaml
+{
+  "query":{
+    "match_all":{}
+  }
+}
+
+===========================================
+Source filtering - to improve the performance
+
+GET /recipe/default/_search
+{
+  "_source":"ingredients.name",
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  }
+}
+
+
+GET /recipe/default/_search
+{
+  "_source":"ingredients.*",
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  }
+}
+
+GET /recipe/default/_search
+{
+  "_source":{
+    "includes":"ingredients.*",
+    "excludes":"ingredients.quantity"
+    },
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  }
+}
+
+
+GET /recipe/default/_search
+{
+  "_source":["title","servings"],
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  }
+}
+
+====================================
+Specifying the result size : 
+
+
+GET /recipe/default/_search?size=5
+{
+  "_source":false,
+  "query":{
+    "match_all":{}
+  }
+}
+
+
+GET /recipe/default/_search
+{
+  "_source":false,
+  "size":2,
+  "query":{
+    "match_all":{}
+  }
+}
+
+=====================================
+Specifying offset using from parameters
+GET /recipe/default/_search
+{
+  "_source":false,
+  "size": 5,
+  "from" : 2,
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  }
+}
+
+========================================
+Pagination:
+ based on 2 parameters
+ a. size 
+ b. from
+
+ 
+ total pages = ceil(total_hits/ page size)
+ from = (page_size * (page_number -1))
+
+========================================
+sorting : 
+on multiple fields ...
+
+GET /recipe/default/_search
+{
+  "_source":["preparation_time_minutes","created"],
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  },
+  "sort":[
+      {"preparation_time_minutes" : "asc"},
+      {"created" : "desc"}
+    ]
+}
+
+==== on multi value fields ...  =====
+
+GET /recipe/default/_search
+{
+  "_source" : "ratings",
+  "query":{
+    "match":{
+      "title":"pasta"
+    }
+  },
+  "sort":[
+      {"ratings" : {
+        "order": "desc",
+        "mode": "avg"
+      }}
+      
+    ]
+}
+
+============================================
+
+Filters context queries :
+
+
+==========================================================
+=============== Agregations ==============================
+==========================================================
+
+curl -H "Content-Type: application/json" -XPOST 'http://localhost:9200/order/default/_bulk?pretty' --data-binary "@orders-bulk.json"
+
+
+
+Metric Aggregations ==================================
+1. Avg of a single value field: 
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "avg_order_amount": {
+      "avg": {
+        "field":"total_amount"
+      }
+    }
+  }
+}
+
+2. Max :of a single valued field : 
+
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "max_order_amount": {
+      "max": {
+        "field":"total_amount"
+      }
+    }
+  }
+}
+
+3. Min of a single valued field : 
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "min_order_amount": {
+      "min": {
+        "field":"total_amount"
+      }
+    }
+  }
+}
+
+4. sum of single valued field : 
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "sum_order_amount": {
+      "sum": {
+        "field":"total_amount"
+      }
+    }
+  }
+}
+
+
+5. all distinct values of a particular field : (cardinality)
+
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "unique_salesmen": {
+      "cardinality": {
+        "field":"salesman.id"
+      }
+    }
+  }
+} 
+
+6. To check number of documents involved in calculating aggregations : 
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "total_docs_used": {
+      "value_count": {
+        "field":"total_amount"
+      }
+    }
+  }
+}
+
+
+7.To get multiple types of metrics aggregations on a single valued field : 
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "total_docs_used": {
+      "stats": {
+        "field":"total_amount"
+      }
+    }
+  }
+}
+
+
+=======================================================================================
+Bucket Aggregations ===========================
+
+1. terms  -   groups documents into terms/ buckets on a specific field
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "status_terms": {
+      "terms": {
+        "field":"status"
+      }
+    }
+  }
+}
+
+
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "status_terms": {
+      "terms": {
+        "field":"status",
+        "missing": "N/A",
+        "min_doc_count": 0,
+        "order": {
+          "_key": "asc"
+        }
+      }
+    }
+  }
+}
+
+
+2. Nested Aggregations :  aggs inside aggs  --- stat aggregation is made over all the documents of each bucket which invidually are aggregated by term aggregation !! The parent aggregation is made over the result set of the query and the child aggregation is made over the result set of the parent aggregation !
+
+GET /order/default/_search
+{
+  "size":0,
+  "aggs": {
+    "term_status":{
+      "terms": {
+        "field": "status"
+      },
+      "aggs": {
+          "stats_total_amount": {
+            "stats": {
+              "field": "total_amount"
+            }
+          }
+        }
+    }
+  }
+}
+
+
+
+3. Applying aggregation on filtered documents by using nested aggregations
+
+GET /order/default/_search
+{
+  "size":0,
+  "aggs":{
+    "low_value_orders":{
+      "filter": {
+        "range": {
+          "total_amount": {
+            "lte": 50
+          }
+        }
+      },
+        "aggs":{
+        "stats_total_amount":{
+          "stats": {
+            "field": "total_amount"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

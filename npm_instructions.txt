@@ -1,0 +1,14 @@
+
+
+npm config set strict-ssl false
+npm config set registry "http://registry.npmjs.org/"
+npm config set proxy 103.240.206.196:35101
+
+
+
+
+
+npm config rm proxy
+npm config rm https-proxy
+
+

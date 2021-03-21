@@ -1,0 +1,55 @@
+== New user logs into the insight
+
+
+1. when the user calls the insight for the first time.
+No active user session found in ISAM => Auth level = 0 =>  ISAM calls device authentication service (/unauth/device) - exposed for sessions with AUTH_LEVEL=0
+
+Device authentication service: 
+No device id found. new device id is generated with no expiry. Hence the deviceId is valid till the browser session is open.
+ISAM creates a new user session and stores the deviceId in it and  and AUTH_LEVEL = 1
+send the deviceId / sessionId to the browser 
+
+==========Login page is displayed to the user ==============
+
+
+2. User enters the emailId and submit.
+same device Id / session Id and entered email sent to ISAM.
+ISAM validates session and calls Email Authentication service (/auth/email) - exposed for sessions with AUTH_LEVEL=1
+
+EmailAuthentication Service : 
+deviceId found in request => decrypt the encrypted ID (done by calling external Ricki API) => 
+hash the decrypted Id(done by using Security.MessageDigest and SHA-1 algorithm)
+checks if the user is valid. 
+set deregistration date for any existing devices for the user  with expirydate > current date 
+generate the access key for the given encrypted deviceId by calling GenerateAccessKey service 
+
+GenerateAccessKey service : 
+generates new access key
+Stores the hashed decrypted device Id in device provision for the first time in DB.
+and mails accesskey to the user and send the service response back to ISAM with AUTH_LEVEL=1
+
+
+===========  access key field is displayed on the login page ============
+
+3. user enters the access key and hits submit.
+ISAM validates the deviceId / session ID and calls Access Key validation service - exposed for sessions with AUTH_LEVEL=1
+
+AccessKeyValidation Service : 
+validates the access key and loads userProfileata service that internally :
+calls the research one entitlement API, loads the dashboards config list  entitlement list and user details 
+and sets same in the response. setting the response status = AA0 and Auth_level = 2
+
+Isam validates the response
+and redirects to home page of the application => /ui/main/dashboard.
+
+
+=================
+
+
+ 
+
+
+
+
+
+

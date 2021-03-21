@@ -1,0 +1,4 @@
+steps to install ubuntu on windows 10 pro : https://www.youtube.com/watch?v=x5MhydijWmc
+
+To install build essential package for full screen window : 
+sudo apt install build-essential dkms linux-headers-$(uname-r)
