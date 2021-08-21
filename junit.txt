@@ -1,0 +1,38 @@
+
+==========================
+intro to testing software
+==========================
+
+why write tests : 
+improves software quality
+ensures that code is doing what you need it to do
+end the fix one thing, break another
+widely accepted as industry standard
+change existing code with confidence
+
+terminologies : 
+code under test : code that needs testing
+test fixture : a fixed state of set of objects used as a baseline for running tests.
+to ensure that there is a fixed env in which tests are run so that results are repeatable. eg : input data, mock objects, loading database with known data.
+
+unit testing : code written to test code. should have no external dependencies and no DB dependency, no spring context etc. testing code wihin an object.
+Unit testing must not be done by bringing up the spring context or initializing the database etc.
+integration testing : designed to test behaviours between objects and parts of the overall system. can include spring context, message brokers, DB, etc.
+functional testing : testing the running application. tesing end to end functionality.
+
+Agile testing methods : 
+TDD : test driven development => first write tests and then write code to fix the tests, refactor the code to clean it up.
+BDD : behaviour driven development => similar to TDD. describes the expected behaviour of the software. using when/then..given a condition when/then..
+
+testing components : 
+mocks : fake implementation of a given class used for testing. 
+spy : like a mock, but a real object is used instead of a fake one. They act as wrapper to real objects.
+
+common testing frameworks : 
+JUnit 5, TestNG, Spock (groovy), cucumber (ruby), mockito (mocking fw), spring MVC test(used in conjunction with junit), REST assured (rest web services),
+beyong testing with CICD :    
+
+
+
+
+

@@ -1,0 +1,114 @@
+Splunk 
+
+documentation : docs.splunk.com
+
+splunk : reports, alerts and dashboards
+sys logs, application logs or any data => reports, alerts, dashboards in real time
+very helpful in analyzinig the log entries.
+capture, parsing log data , clean, transform the captured data.
+train splunk to look for certain patterns
+
+Deployment models : 
+everything splunk does is governed byconfiguration files.
+configuration files are stored in /etc  and have .conf extension
+config files are layered. => global level, application level.. 
+you can have .conf files that have the same name in different directories. splunk determines which of these config files to use.
+the /etc/<app>/default directory contains preconfigured versions of .cong files.
+the /etc/<app>/local directory is where custom configurations are stored.
+
+conf files structure: 
+[stanza]
+Attribute = Value
+Attribute = Value
+
+[stanza]
+Attribute = Value
+
+deployment models : cloud & on premises
+easily scalable
+
+splunk distributions : universal forwarder (light) & splunk enterprise installation (full fledged)
+departmental deployment 
+
+
+deployment components :
+universal forwarder => the one which provides data
+heavy forwarder =>
+indexer => the one that examines ,analyzes data
+search head => 
+deployment server => 
+master cluster node =>
+
+splunk data pipeline [IPIS] ==============================
+Input => forwarded data, uploaded data, network data, scripts.
+parsing => examines and transforms the data and adds metadata
+Indexing => data divided into events. writes the data in the form of flat files to the disks in buckets (directories)
+searching => user interaction with the data
+
+how spplunk stroes data  ====================================
+stores data in indexes on the disks in buckets
+splunks transforms raw data into events and then stores them into indices buckets
+An event is a single row of data that has metadata attached to it.
+The default index that comes with splunk is called main and _internal => stores internal logs.
+events have fields which are key = value pair.
+Splunk adds the default fields to all events.
+timestamp, host, source and sourcetype are examples of default fields.
+
+storage : =======================================
+the data is stored in the form of index files in directories called buckets. 
+the indexes are distributed accross different types of buckets as follows.
+hot bucket => for newly indexed data. supports read/write operations. many hot buckets. we interact with data from hot baucket.
+warm  bucket=> data rolled from hot bucket with no active write. only read.. many warm buckets.
+cold bucket => data rolled from warm buckets and moved to different locations.
+frozen buckets => data rolled from cold buckets. the indexes are deleted after certain time. Can choose to archive the indices if required.
+thawed buckets => data restored from an archive.
+
+
+splunk licencing : ==========================================
+you license data ingested per data.. not data stored.
+daily indexing volume is measured from midnight to midnight by the clock on the license master.
+5 splunk license type : 
+standard, enterprise trial license, sales trial license, dev/test license, free, Industrial IoT, forwarder.
+
+Splunk apps ====================================
+apps extends splunks functionality
+Apps => visualization, analysis, reports, alerts, dashboards, user interface
+add ons => support these apps => enrich the incoming data with tags, data models, 
+apps and add-ons can be created by individuals, third party companies or splunk itself.
+app - simply a collection of splunk config files. can be downloaded from splunkbase.com
+add on is a subset of an app - specify data collection but donot have UI.
+
+
+
+=========================================================
+Splunk input configuration===============================
+=========================================================
+basic settings for an input
+
+
+list splunk forwarder types
+
+
+configure a forwarder
+
+
+add an input to a universal forwarder using CLI
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

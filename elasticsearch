@@ -508,9 +508,8 @@ binary:
 Range data types : gt,gte,lt, lte
 
 
-
 Complex Data types : 
-Object data types : Any json object, 
+Object data types : Any json object
 Array data types
 nested : Objects containing objects
 
@@ -518,7 +517,7 @@ Datatype for all fields are mentioned using "type" key
 Datatype for object type fields are mentioned using "properties" key
 Objects are flattened using dot notation syntax and then stored in apache lucene.
 
-nested objects : when an array of objects are stored, the values of one field of each object in that array is stofed as list. Hence the relation between 2 fields of the object is lost. This can be prevented by using another type of object data type called "nested"
+nested objects : when an array of objects are stored, the values of one field of each object in that array is stored as list. Hence the relation between 2 fields of the object is lost. This can be prevented by using another type of object data type called "nested"
 nested objects are stored as hidden documents.
 
 

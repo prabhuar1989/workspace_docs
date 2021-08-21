@@ -1,0 +1,13 @@
+twitter API configuration 
+
+App name : prabhuar1989-kafka-for-beginners-course
+APP ID : 20685235
+Consumer API key : aV3jFt9Yx6PQUAOpf1db1sxaD
+Consumer API secret : mNMrswMOeWbPVKfFsp5qAZW6n8HZs8XBQnBFcb1CHEosXShdjm
+Bearer token : AAAAAAAAAAAAAAAAAAAAALOhOwEAAAAAhuw0p5VxG%2Fav4xSkd5wwKCguVX0%3Dw6p1y5YLXeeRw5Kf0d0T5PqUINE3I7zQwe6l2vZdwz9o9cnQEr
+AccessToken : 222048023-uMY2XE9PlkriD2JwgPdggmFqoEnmO97MHCSVBuo8
+Access token secret : 89xzCIhUivEHBCgnErZZ9EofZMiJNGOUFI68wFeRzjsi0
+
+
+67401
+90000
